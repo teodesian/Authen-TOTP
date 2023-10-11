@@ -1,2 +1,6 @@
 Trog-TOTP-*
 .build/
+*.bak
+*.swp
+*.swn
+*.swo

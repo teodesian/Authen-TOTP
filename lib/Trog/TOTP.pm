@@ -6,7 +6,7 @@ use warnings;
 use 5.006;
 use v5.14.0;    # Before 5.006, v5.10.0 would not be understood.
 
-# ABSTRACT: Fork of Authen::TOTP 
+# ABSTRACT: Fork of Authen::TOTP
 
 use Ref::Util qw{is_coderef};
 use Digest::SHA();
@@ -71,7 +71,9 @@ While patches were initially merged upstream, no CPAN releases happened, so here
 
 =cut
 
-=head1 new Authen::TOTP
+=head1 CONSTRUCTOR
+
+=head2 new
 
  my $gen = new Authen::TOTP(
 	 digits 	=>	[6|8],
@@ -134,10 +136,10 @@ sub new {
     my $self  = {};
     bless $self, $class;
 
-    return $self->initialize(@_);
+    return $self->_initialize(@_);
 }
 
-sub initialize {
+sub _initialize {
     my $self = shift;
 
     $self->{DEBUG} //= 0;
@@ -157,12 +159,12 @@ sub initialize {
         }
     }
 
-    $self->valid_digits();
-    $self->valid_period();
-    $self->valid_algorithm();
-    $self->valid_when();
-    $self->valid_tolerance();
-    $self->valid_secret();
+    $self->_valid_digits();
+    $self->_valid_period();
+    $self->_valid_algorithm();
+    $self->_valid_when();
+    $self->_valid_tolerance();
+    $self->_valid_secret();
 
     return $self;
 }
@@ -171,20 +173,21 @@ sub initialize {
 
 =cut
 
-sub logger {
-    return $self->{logger}->(@_) if is_coderef($self->{logger});
+sub _logger {
+    my $self = shift;
+    return $self->{logger}->(@_) if is_coderef( $self->{logger} );
     warn @_;
 }
 
-sub debug_print {
+sub _debug_print {
     my $self = shift;
     return unless $self->{DEBUG};
-    $self->logger(@_);
+    $self->_logger(@_);
 
     return 1;
 }
 
-sub process_sub_arguments {
+sub _process_sub_arguments {
     my $self = shift;
 
     my $args  = shift;
@@ -207,7 +210,7 @@ sub process_sub_arguments {
     return @rets;
 }
 
-sub valid_digits {
+sub _valid_digits {
     my $self   = shift;
     my $digits = shift;
 
@@ -220,7 +223,7 @@ sub valid_digits {
     1;
 }
 
-sub valid_period {
+sub _valid_period {
     my $self   = shift;
     my $period = shift;
 
@@ -233,7 +236,7 @@ sub valid_period {
     1;
 }
 
-sub valid_algorithm {
+sub _valid_algorithm {
     my $self      = shift;
     my $algorithm = shift;
 
@@ -246,7 +249,7 @@ sub valid_algorithm {
     1;
 }
 
-sub valid_when {
+sub _valid_when {
     my $self = shift;
     my $when = shift;
 
@@ -259,7 +262,7 @@ sub valid_when {
     1;
 }
 
-sub valid_tolerance {
+sub _valid_tolerance {
     my $self      = shift;
     my $tolerance = shift;
 
@@ -272,7 +275,7 @@ sub valid_tolerance {
     1;
 }
 
-sub valid_secret {
+sub _valid_secret {
     my $self = shift;
     my ( $secret, $base32secret ) = @_;
 
@@ -280,53 +283,71 @@ sub valid_secret {
         $self->{secret} = $secret;
     }
     elsif ($base32secret) {
-        $self->{secret} = $self->base32dec($base32secret);
+        $self->{secret} = Encode::Base2N::decode_base32($base32secret);
     }
     else {
         if ( defined( $self->{base32secret} ) ) {
-            $self->{secret} = $self->base32dec( $self->{base32secret} );
+            $self->{secret} = Encode::Base2N::decode_base32( $self->{base32secret} );
         }
         else {
             if ( defined( $self->{algorithm} ) ) {
                 if ( $self->{algorithm} eq "SHA512" ) {
-                    $self->{secret} = $self->gen_secret(64);
+                    $self->{secret} = $self->_gen_secret(64);
                 }
                 elsif ( $self->{algorithm} eq "SHA256" ) {
-                    $self->{secret} = $self->gen_secret(32);
+                    $self->{secret} = $self->_gen_secret(32);
                 }
                 else {
-                    $self->{secret} = $self->gen_secret(20);
+                    $self->{secret} = $self->_gen_secret(20);
                 }
             }
             else {
-                $self->{secret} = $self->gen_secret(20);
+                $self->{secret} = $self->_gen_secret(20);
             }
         }
     }
 
-    $self->{base32secret} = $self->base32enc( $self->{secret} );
+    $self->{base32secret} = Encode::Base2N::encode_base32( $self->{secret} );
     1;
 }
+
+=head2 secret
+
+Return the current secret used by this object.
+
+=cut
 
 sub secret {
     my $self = shift;
     return $self->{secret};
 }
 
+=head2 base32secret
+
+Return the base32encoded secret used by this object.
+
+=cut
+
 sub base32secret {
     my $self = shift;
     return $self->{base32secret};
 }
 
+=head2 algorithm([STRING $algo])
+
+Returns, and optionally sets the algorithm if passed.
+
+=cut
+
 sub algorithm {
     my $self      = shift;
     my $algorithm = shift;
-    $self->valid_algorithm($algorithm);
+    $self->_valid_algorithm($algorithm) if $algorithm;
 
     return $self->{algorithm};
 }
 
-sub hmac {
+sub _hmac {
     my $self = shift;
     my $Td   = shift;
     if ( $self->{algorithm} eq 'SHA512' ) {
@@ -340,15 +361,6 @@ sub hmac {
     }
 }
 
-sub base32enc {
-    my $self = shift;
-    return Encode::Base2N::encode_base32(shift);
-}
-
-sub base32dec {
-    return Encode::Base2N::decode_base32(shift);
-}
-
 =head2 expected_totp_code( TIME_T $when )
 
 Returns what a code "ought" to be at any given unix timestamp.
@@ -358,12 +370,12 @@ Useful for integrating into command line tooling to fix things when people have 
 
 sub expected_totp_code {
     my ( $self, $when ) = @_;
-    $self->debug_print( "using when $when (" . ( $when - $self->{when} ) . ")" );
+    $self->_debug_print( "using when $when (" . ( $when - $self->{when} ) . ")" );
 
     my $T  = sprintf( "%016x", int( $when / $self->{period} ) );
     my $Td = pack( 'H*', $T );
 
-    my $hmac = $self->hmac($Td);
+    my $hmac = $self->_hmac($Td);
 
     # take the 4 least significant bits (1 hex char) from the encrypted string as an offset
     my $offset = hex( substr( $hmac, -1 ) );
@@ -374,17 +386,17 @@ sub expected_totp_code {
     return sprintf( "%0" . $self->{digits} . "d", ( $encrypted % ( 10**$self->{digits} ) ) );
 }
 
-
-sub gen_secret {
+sub _gen_secret {
     my $self   = shift;
     my $length = shift || 20;
 
     my $secret;
-    for my $i ( 0 .. int( rand($length) ) + $length ) {
+    ## no critic (Variables::RequireLexicalLoopIterators)
+    for ( 0 .. int( rand($length) ) + $length ) {
         $secret .= join '', ( '/', 1 .. 9, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '+', '=', 'A' .. 'H', 'J' .. 'N', 'P' .. 'Z', 'a' .. 'h', 'm' .. 'z' )[ rand 58 ];
     }
     if ( length($secret) > ( $length + 1 ) ) {
-        $self->debug_print( "have len " . length($secret) . " ($secret) so cutting down" );
+        $self->_debug_print( "have len " . length($secret) . " ($secret) so cutting down" );
         return substr( $secret, 0, $length );
     }
     return $secret;
@@ -413,16 +425,16 @@ Usage:
 sub generate_otp {
     my $self = shift;
     my ( $digits, $period, $algorithm, $secret, $base32secret, $issuer, $user ) =
-      $self->process_sub_arguments( \@_, [ 'digits', 'period', 'algorithm', 'secret', 'base32secret', 'issuer', 'user' ] );
+      $self->_process_sub_arguments( \@_, [ 'digits', 'period', 'algorithm', 'secret', 'base32secret', 'issuer', 'user' ] );
 
     unless ($user) {
         die "need user to use as prefix in generate_otp()";
     }
 
-    $self->valid_digits($digits);
-    $self->valid_period($period);
-    $self->valid_algorithm($algorithm);
-    $self->valid_secret( $secret, $base32secret );
+    $self->_valid_digits($digits);
+    $self->_valid_period($period);
+    $self->_valid_algorithm($algorithm);
+    $self->_valid_secret( $secret, $base32secret );
 
     if ($issuer) {
         $issuer = qq[&issuer=] . $issuer;
@@ -454,23 +466,22 @@ Usage:
 
 =cut
 
-
 sub validate_otp {
     my $self = shift;
     my ( $digits, $period, $algorithm, $secret, $when, $tolerance, $base32secret, $otp ) =
-      $self->process_sub_arguments( \@_, [ 'digits', 'period', 'algorithm', 'secret', 'when', 'tolerance', 'base32secret', 'otp' ] );
+      $self->_process_sub_arguments( \@_, [ 'digits', 'period', 'algorithm', 'secret', 'when', 'tolerance', 'base32secret', 'otp' ] );
 
     unless ( $otp && $otp =~ m|^\d{6,8}$| ) {
         $otp ||= "";
         die "invalid otp $otp passed to validate_otp()";
     }
 
-    $self->valid_digits($digits);
-    $self->valid_period($period);
-    $self->valid_algorithm($algorithm);
-    $self->valid_when($when);
-    $self->valid_tolerance($tolerance);
-    $self->valid_secret( $secret, $base32secret );
+    $self->_valid_digits($digits);
+    $self->_valid_period($period);
+    $self->_valid_algorithm($algorithm);
+    $self->_valid_when($when);
+    $self->_valid_tolerance($tolerance);
+    $self->_valid_secret( $secret, $base32secret );
 
     my @tests = ( $self->{when} );
     for my $i ( 1 .. $self->{tolerance} ) {
@@ -478,14 +489,13 @@ sub validate_otp {
         push @tests, ( $self->{when} + ( $self->{period} * $i ) );
     }
 
-    foreach $when (@tests) {
-        my $code = $self->expected_totp_code( $when );
-        $self->debug_print("comparing $code to $otp");
+    foreach my $when (@tests) {
+        my $code = $self->expected_totp_code($when);
+        $self->_debug_print("comparing $code to $otp");
         return 1 if $code eq sprintf( "%0" . $self->{digits} . "d", $otp );
     }
 
-    return undef;
+    return 0;
 }
-
 
 1;
