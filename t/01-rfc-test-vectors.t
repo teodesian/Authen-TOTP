@@ -3,10 +3,10 @@ use warnings;
 use Test::More tests => 19;
 
 BEGIN {
-use_ok( 'Authen::TOTP' );
+use_ok( 'Trog::TOTP' );
 }
 
-my $otp = new Authen::TOTP;
+my $otp = new Trog::TOTP;
 
 ok ( $otp->validate_otp(secret => "12345678901234567890", when => 59, digits => 8, otp => "94287082", tolerance => 1) == 1 );
 

@@ -8,7 +8,7 @@ use v5.14.0;    # Before 5.006, v5.10.0 would not be understood.
 
 # ABSTRACT: Fork of Authen::TOTP
 
-use Ref::Util qw{is_coderef};
+use Ref::Util qw{is_coderef is_hashref};
 use Digest::SHA();
 use Encode::Base2N();
 
@@ -145,7 +145,7 @@ sub _initialize {
     $self->{DEBUG} //= 0;
 
     if ( @_ != 0 ) {
-        if ( ref $_[0] eq 'HASH' ) {
+        if ( is_hashref( $_[0] ) ) {
             my $hash = $_[0];
             foreach ( keys %$hash ) {
                 $self->{ lc $_ } = $hash->{$_};
@@ -195,7 +195,7 @@ sub _process_sub_arguments {
     my @rets;
 
     if ( @$args != 0 ) {
-        if ( ref $args->[0] eq 'HASH' ) {
+        if ( is_hashref( $args->[0] ) ) {
             foreach my $want (@$wants) {
                 push @rets, $args->[0]->{$want};
             }
