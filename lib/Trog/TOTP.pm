@@ -39,7 +39,7 @@ While patches were initially merged upstream, no CPAN releases happened, so here
  );
 
  # Be sure to store this as binary data
- my $secret = $get->secret();
+ my $secret = $gen->secret();
 
  # This is what you will want to show users for input into their TOTP apps when their camera is failing
  my $b32secret = $gen->base32secret();
