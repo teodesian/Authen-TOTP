@@ -26,12 +26,15 @@ While patches were initially merged upstream, no CPAN releases happened, so here
 
 =head1 USAGE
 
- my $gen = new Authen::TOTP(
-     # not needed when setting up TOTP for the first time; we generate a secret automatically which you should grab and store.
+ my $gen = Authen::TOTP->new(
+     # not needed when setting up TOTP for the first time;
+     # we generate a secret automatically which you should grab and store.
 	 secret		=>	"some_random_stuff",
-     # ACHTUNG! lots of TOTP apps on various devices straight up ignore this field and hardcode 30s periods.  So probably best to never touch this.
+     # ACHTUNG! lots of TOTP apps on various devices ignore this field
+     # and hardcode 30s periods.  Probably best to never touch this.
      period     => 30,
-     # callback used when emitting messages; use me for integrating into your own logging framework
+     # callback used when emitting messages;
+     # use me for integrating into your own logging framework
      logger     => sub { my $msg = shift; ... },
  );
 
@@ -58,7 +61,7 @@ While patches were initially merged upstream, no CPAN releases happened, so here
  my $img = $qrcode->plot($uri);
  $img->write(file => "totp.png", type => "png");
 
- #compare user's OTP with computed one
+ # compare user's OTP with computed one
  if ($gen->validate_otp(otp => <user_input>, secret => <stored_secret>, tolerance => 1)) {
 	#2FA success
  }
@@ -75,7 +78,7 @@ While patches were initially merged upstream, no CPAN releases happened, so here
 
 =head2 new
 
- my $gen = new Authen::TOTP(
+ my $gen = Authen::TOTP->new(
 	 digits 	=>	[6|8],
 	 period		=>	[30|60],
 	 algorithm	=>	"SHA1", #SHA256 and SHA512 are equally valid
