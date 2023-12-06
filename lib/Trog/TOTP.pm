@@ -26,7 +26,7 @@ While patches were initially merged upstream, no CPAN releases happened, so here
 
 =head1 USAGE
 
- my $gen = Authen::TOTP->new(
+ my $gen = Trog::TOTP->new(
      # not needed when setting up TOTP for the first time;
      # we generate a secret automatically which you should grab and store.
 	 secret		=>	"some_random_stuff",
@@ -78,7 +78,7 @@ While patches were initially merged upstream, no CPAN releases happened, so here
 
 =head2 new
 
- my $gen = Authen::TOTP->new(
+ my $gen = Trog::TOTP->new(
 	 digits 	=>	[6|8],
 	 period		=>	[30|60],
 	 algorithm	=>	"SHA1", #SHA256 and SHA512 are equally valid
